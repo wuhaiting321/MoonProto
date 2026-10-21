@@ -1,0 +1,14 @@
+# MoonBit build outputs
+_build/
+target/
+.mooncakes/
+.moonagent/
+.mooncaches/
+*.mbti.bak
+
+# OS / editor artifacts
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
