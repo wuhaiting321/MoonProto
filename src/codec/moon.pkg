@@ -1,1 +1,9 @@
-// Schema-driven protobuf encoding and decoding built on `src/wire`.
+// Copyright 2026 wuhaiting321
+// Apache License 2.0
+
+import {
+  "wuhaiting321/moonproto/src/wire",
+  "wuhaiting321/moonproto/src/types",
+  "moonbitlang/core/buffer",
+  "moonbitlang/core/encoding/utf8",
+}

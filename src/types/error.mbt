@@ -30,6 +30,8 @@ pub(all) suberror DecodeError {
   UnterminatedGroup(offset~ : Int)
   /// Nested groups exceeded the configured safety limit.
   RecursionLimitExceeded(limit~ : Int)
+  /// A string field contained bytes that are not valid UTF-8.
+  InvalidUtf8(offset~ : Int)
 } derive(Debug, Eq)
 
 ///|
