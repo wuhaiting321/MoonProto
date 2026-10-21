@@ -32,6 +32,10 @@ pub(all) suberror DecodeError {
   RecursionLimitExceeded(limit~ : Int)
   /// A string field contained bytes that are not valid UTF-8.
   InvalidUtf8(offset~ : Int)
+  /// A field tag used a wire type that cannot carry the requested scalar.
+  UnexpectedWireType(expected~ : Int, actual~ : Int)
+  /// A fixed-width packed payload was not a multiple of its element width.
+  InvalidPackedLength(length~ : Int, element_width~ : Int)
 } derive(Debug, Eq)
 
 ///|
@@ -44,4 +48,6 @@ pub(all) suberror EncodeError {
   FieldNumberOutOfRange(field_number~ : Int)
   /// A field number fell inside the implementation-reserved range 19000..19999.
   ReservedFieldNumber(field_number~ : Int)
+  /// A packed array mixed scalars of different protobuf types.
+  PackedTypeMismatch(expected~ : String, actual~ : String)
 } derive(Debug, Eq)
