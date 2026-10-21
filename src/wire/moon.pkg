@@ -1,1 +1,7 @@
-// Low-level protobuf wire primitives: varints, tags, and wire types.
+// Copyright 2026 wuhaiting321
+// Apache License 2.0
+
+import {
+  "wuhaiting321/moonproto/src/types",
+  "moonbitlang/core/buffer",
+}
