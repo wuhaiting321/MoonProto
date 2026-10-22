@@ -76,7 +76,7 @@ pub fn read_uvarint(
   let mut value = 0UL
   for index in 0..<MAX_VARINT_BYTES {
     if position >= length {
-      raise @types.Truncated(offset~, needed=1, available=length - offset)
+      raise @types.Truncated(offset~, needed=1, available=length - position)
     }
     let byte = bytes[position]
     let payload = byte.to_uint64()

@@ -39,6 +39,65 @@ pub(all) suberror DecodeError {
 } derive(Debug, Eq)
 
 ///|
+/// Human-readable diagnostic for a decode failure.
+///
+/// Every message names the failing construct and, where available, the byte
+/// offset at which it was detected.
+pub fn DecodeError::message(self : DecodeError) -> String {
+  match self {
+    Truncated(offset~, needed~, available~) =>
+      "truncated input at offset " +
+      offset.to_string() +
+      ": needed " +
+      needed.to_string() +
+      " bytes, " +
+      available.to_string() +
+      " available"
+    VarintTooLong(offset~) =>
+      "varint at offset " + offset.to_string() + " exceeds 10 bytes"
+    VarintOverflow(offset~) =>
+      "varint at offset " + offset.to_string() + " overflows 64 bits"
+    UnknownWireType(value~) => "unknown wire type " + value.to_string()
+    InvalidFieldNumber(field_number~) =>
+      "invalid field number " + field_number.to_string()
+    TagValueOutOfRange(value~) =>
+      "tag value " + value.to_string() + " exceeds 32 bits"
+    LengthOutOfBounds(offset~, length~, remaining~) =>
+      "length " +
+      length.to_string() +
+      " at offset " +
+      offset.to_string() +
+      " exceeds " +
+      remaining.to_string() +
+      " remaining bytes"
+    UnexpectedEndGroup(offset~) =>
+      "unexpected end-group at offset " + offset.to_string()
+    MismatchedEndGroup(offset~, expected~, actual~) =>
+      "end-group field " +
+      actual.to_string() +
+      " does not match start-group field " +
+      expected.to_string() +
+      " at offset " +
+      offset.to_string()
+    UnterminatedGroup(offset~) =>
+      "unterminated group at offset " + offset.to_string()
+    RecursionLimitExceeded(limit~) =>
+      "recursion limit " + limit.to_string() + " exceeded"
+    InvalidUtf8(offset~) => "invalid UTF-8 at offset " + offset.to_string()
+    UnexpectedWireType(expected~, actual~) =>
+      "unexpected wire type " +
+      actual.to_string() +
+      ", expected " +
+      expected.to_string()
+    InvalidPackedLength(length~, element_width~) =>
+      "packed length " +
+      length.to_string() +
+      " is not a multiple of " +
+      element_width.to_string()
+  }
+}
+
+///|
 /// Errors raised while encoding Protocol Buffers messages.
 ///
 /// Encoding never inspects untrusted input, so these errors describe invalid
@@ -51,3 +110,16 @@ pub(all) suberror EncodeError {
   /// A packed array mixed scalars of different protobuf types.
   PackedTypeMismatch(expected~ : String, actual~ : String)
 } derive(Debug, Eq)
+
+///|
+/// Human-readable diagnostic for an encode failure.
+pub fn EncodeError::message(self : EncodeError) -> String {
+  match self {
+    FieldNumberOutOfRange(field_number~) =>
+      "field number " + field_number.to_string() + " is outside 1..536870911"
+    ReservedFieldNumber(field_number~) =>
+      "field number " + field_number.to_string() + " is reserved"
+    PackedTypeMismatch(expected~, actual~) =>
+      "packed field mixes " + actual + " with " + expected
+  }
+}
