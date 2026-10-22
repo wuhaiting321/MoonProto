@@ -12,12 +12,13 @@
 /// or malformed payload can never read into the following field.
 pub struct Decoder {
   reader : @wire.WireReader
+  depth : Int
 }
 
 ///|
 /// Create a decoder over a complete message.
 pub fn Decoder::new(bytes : Bytes) -> Decoder {
-  { reader: @wire.WireReader::new(bytes), }
+  { reader: @wire.WireReader::new(bytes), depth: 0, }
 }
 
 ///|
@@ -27,7 +28,7 @@ pub fn Decoder::new_limited(
   start : Int,
   end : Int,
 ) -> Decoder raise @types.DecodeError {
-  { reader: @wire.WireReader::new_limited(bytes, start, end), }
+  { reader: @wire.WireReader::new_limited(bytes, start, end), depth: 0, }
 }
 
 ///|
