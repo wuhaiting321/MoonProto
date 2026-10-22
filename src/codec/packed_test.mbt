@@ -4,7 +4,7 @@
 ///|
 /// Encode and decode one packed field for round-trip assertions.
 fn packed_roundtrip(
-  field_number : Int,
+  field_number : Int32,
   scalar_type : @types.ScalarType,
   values : Array[@types.ScalarValue],
 ) -> Array[@types.ScalarValue] raise @types.DecodeError {

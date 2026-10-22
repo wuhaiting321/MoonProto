@@ -9,34 +9,42 @@
 /// as higher-level wire and schema rules are added.
 pub(all) suberror DecodeError {
   /// The input ended before the requested range could be read.
-  Truncated(offset~ : Int, needed~ : Int, available~ : Int)
+  Truncated(offset~ : Int32, needed~ : Int32, available~ : Int32)
   /// A varint continued past the ten bytes allowed for a 64-bit value.
-  VarintTooLong(offset~ : Int)
+  VarintTooLong(offset~ : Int32)
   /// The tenth varint byte carried bits outside the 64-bit range.
-  VarintOverflow(offset~ : Int)
+  VarintOverflow(offset~ : Int32)
   /// A tag used a wire type outside the six defined protobuf wire types.
-  UnknownWireType(value~ : Int)
+  UnknownWireType(value~ : Int32)
   /// A tag carried field number zero or a number above the protobuf maximum.
-  InvalidFieldNumber(field_number~ : Int)
+  InvalidFieldNumber(field_number~ : Int32)
   /// A tag varint carried more than the 32 bits a valid tag can occupy.
   TagValueOutOfRange(value~ : UInt64)
   /// A length-delimited field declared more bytes than the input contains.
-  LengthOutOfBounds(offset~ : Int, length~ : UInt64, remaining~ : Int)
+  LengthOutOfBounds(offset~ : Int32, length~ : UInt64, remaining~ : Int32)
   /// A group was closed without a matching start-group tag.
-  UnexpectedEndGroup(offset~ : Int)
+  UnexpectedEndGroup(offset~ : Int32)
   /// An end-group tag named a different field than its start-group tag.
-  MismatchedEndGroup(offset~ : Int, expected~ : Int, actual~ : Int)
+  MismatchedEndGroup(offset~ : Int32, expected~ : Int32, actual~ : Int32)
   /// The input ended while a start-group tag was still open.
-  UnterminatedGroup(offset~ : Int)
+  UnterminatedGroup(offset~ : Int32)
   /// Nested groups exceeded the configured safety limit.
-  RecursionLimitExceeded(limit~ : Int)
+  RecursionLimitExceeded(limit~ : Int32)
   /// A string field contained bytes that are not valid UTF-8.
-  InvalidUtf8(offset~ : Int)
+  InvalidUtf8(offset~ : Int32)
   /// A field tag used a wire type that cannot carry the requested scalar.
-  UnexpectedWireType(expected~ : Int, actual~ : Int)
+  UnexpectedWireType(expected~ : Int32, actual~ : Int32)
   /// A fixed-width packed payload was not a multiple of its element width.
-  InvalidPackedLength(length~ : Int, element_width~ : Int)
+  InvalidPackedLength(length~ : Int32, element_width~ : Int32)
 } derive(Debug, Eq)
+
+///|
+/// Explicit trait-method promotion for the derived `Debug` implementation.
+pub extend DecodeError with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+/// Explicit trait-method promotion for the derived `Eq` implementation.
+pub extend DecodeError with Eq::{equal, not_equal}
 
 ///|
 /// Human-readable diagnostic for a decode failure.
@@ -104,12 +112,20 @@ pub fn DecodeError::message(self : DecodeError) -> String {
 /// schema or field choices made by the caller.
 pub(all) suberror EncodeError {
   /// A field number was zero or above the protobuf maximum.
-  FieldNumberOutOfRange(field_number~ : Int)
+  FieldNumberOutOfRange(field_number~ : Int32)
   /// A field number fell inside the implementation-reserved range 19000..19999.
-  ReservedFieldNumber(field_number~ : Int)
+  ReservedFieldNumber(field_number~ : Int32)
   /// A packed array mixed scalars of different protobuf types.
   PackedTypeMismatch(expected~ : String, actual~ : String)
 } derive(Debug, Eq)
+
+///|
+/// Explicit trait-method promotion for the derived `Debug` implementation.
+pub extend EncodeError with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+/// Explicit trait-method promotion for the derived `Eq` implementation.
+pub extend EncodeError with Eq::{equal, not_equal}
 
 ///|
 /// Human-readable diagnostic for an encode failure.

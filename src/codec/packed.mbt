@@ -12,7 +12,7 @@
 /// different scalar types. `string` and `bytes` cannot be packed.
 pub fn Encoder::write_packed_scalar_field(
   self : Encoder,
-  field_number : Int,
+  field_number : Int32,
   values : Array[@types.ScalarValue],
 ) -> Unit raise @types.EncodeError {
   let tag = @wire.Tag::new(field_number, @wire.WireType::LengthDelimited)

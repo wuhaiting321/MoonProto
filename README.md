@@ -22,7 +22,7 @@ packed repeated、嵌套消息与 group 安全跳过；不解析 `.proto`、不�
 | 项目方向 | 序列化与数据交换基础库 / Protocol Buffers v3 Wire Format |
 | 是否为移植项目 | 否，原创项目 |
 | 模块名 | `wuhaiting321/moonproto`（遵循 mooncakes.io 的 `<author>/<module>` 命名规范） |
-| 代码规模 | 1260 行库源码 + 2233 行测试 + 97 行可运行示例，25 个 `.mbt` 文件，合计 3590 行 |
+| 代码规模 | 1296 行库源码 + 2235 行测试 + 97 行可运行示例，25 个 `.mbt` 文件，合计 3628 行 |
 | 测试状态 | `moon test` 全部通过（109 个用例，0 失败） |
 | 构建状态 | 默认目标与 `moon check --target all --deny-warn` 均零错误、零告警；`moon fmt --check` 通过 |
 | 开源许可证 | Apache-2.0 |
@@ -57,7 +57,7 @@ wire format 的每个原语（varint、zigzag、tag、长度窗口、标量、pa
 - 与"只解不编"的示例代码相比：编码与解码共享同一套标量表与 wire type 校验，
   测试用编码→解码往返与已知向量双向验证，而不是只跑通一个方向。
 - 与 schema 工具链相比：不引入 `protoc`、descriptor 或反射层，调用方对字段号的
-  选择就是唯一事实来源，边界与错误路径因此可以在 1260 行内被完整审计。
+  选择就是唯一事实来源，边界与错误路径因此可以在 1296 行内被完整审计。
 
 ## 三、典型使用场景
 
@@ -144,7 +144,7 @@ malformed input rejected: truncated input at offset 1: needed 1 bytes, 0 availab
 
 | 依赖 | 版本要求 | 说明 |
 | --- | --- | --- |
-| MoonBit 工具链 | 已在 `moon 0.1.20260915` / `moonc v0.10.13` 上验证 | 项目以 MoonBit 为唯一实现语言；CI 每次安装官方最新工具链验证 |
+| MoonBit 工具链 | 已在 `moon 0.1.20261020` / `moonc v0.10.16` 上验证 | 项目以 MoonBit 为唯一实现语言；CI 每次安装官方最新工具链，并依次执行 `moon fmt --check`、`moon check --deny-warn`、`moon test --deny-warn` |
 | 编译器后端 | 任一 `moon check --target` 支持的平台 | 纯逻辑实现，无需 gcc/Node.js，也不链接任何系统库 |
 
 安装 MoonBit 工具链（Linux / macOS）：
@@ -217,12 +217,12 @@ fn round_trip() -> Bytes raise {
 
 | 包 | 职责 | 源码规模 |
 | --- | --- | --- |
-| `src/types` | 标量类型/值 ADT、`DecodeError`、`EncodeError` 与诊断文本 | 210 行 |
-| `src/wire` | varint、zigzag、tag、带窗口边界的 `WireReader` | 602 行 |
+| `src/types` | 标量类型/值 ADT、`DecodeError`、`EncodeError` 与诊断文本 | 234 行 |
+| `src/wire` | varint、zigzag、tag、带窗口边界的 `WireReader` | 614 行 |
 | `src/codec` | `Encoder` / `Decoder`、标量、packed、嵌套消息与 group 跳过 | 448 行 |
 
 依赖方向严格单向：`codec → wire → types`。底层包互不依赖，不存在环。上表合计
-1260 行，另有 2233 行测试与 97 行示例，总计 3590 行，低于 5000 行的项目硬约束。
+1296 行，另有 2235 行测试与 97 行示例，总计 3628 行，低于 5000 行的项目硬约束。
 
 ### 6.2 核心技术实现
 
@@ -343,7 +343,7 @@ MoonBit 官方标准库 `moonbitlang/core`。
 | 自测存在"自己验证自己"的偏差 | 错误实现可能被自己的测试放过 | 使用规范中的经典向量与逐字节断言；黑盒集成测试只走公开 API；后续接入官方 conformance 套件 |
 | 性能尚未量化 | 无法承诺吞吐指标 | 不宣称未测得的性能；解码为单遍 O(n)，无 schema 解析开销；后续补充基准测试与 Buffer 复用 |
 | 与官方 protobuf 栈定位重叠 | 生态重复建设 | 明确只做 wire 层，不碰 schema/代码生成；保持 Apache-2.0，可与官方栈组合使用 |
-| 功能范围蔓延导致质量下降 | 行数与复杂度失控 | README 明确非目标；核心保持在 1260 行；新增能力必须附带测试与文档 |
+| 功能范围蔓延导致质量下降 | 行数与复杂度失控 | README 明确非目标；核心保持在 1296 行；新增能力必须附带测试与文档 |
 
 ## 七、后续计划
 

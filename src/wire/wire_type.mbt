@@ -26,28 +26,36 @@ pub(all) enum WireType {
 } derive(Debug, Eq)
 
 ///|
+/// Explicit trait-method promotion for the derived `Debug` implementation.
+pub extend WireType with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+/// Explicit trait-method promotion for the derived `Eq` implementation.
+pub extend WireType with Eq::{equal, not_equal}
+
+///|
 /// Smallest valid protobuf field number.
-pub const MIN_FIELD_NUMBER : Int = 1
+pub const MIN_FIELD_NUMBER : Int32 = 1
 
 ///|
 /// Largest valid protobuf field number (`2^29 - 1`).
-pub const MAX_FIELD_NUMBER : Int = 536870911
+pub const MAX_FIELD_NUMBER : Int32 = 536870911
 
 ///|
 /// First field number reserved for protobuf implementations.
-pub const FIRST_RESERVED_FIELD_NUMBER : Int = 19000
+pub const FIRST_RESERVED_FIELD_NUMBER : Int32 = 19000
 
 ///|
 /// Last field number reserved for protobuf implementations.
-pub const LAST_RESERVED_FIELD_NUMBER : Int = 19999
+pub const LAST_RESERVED_FIELD_NUMBER : Int32 = 19999
 
 ///|
 /// Maximum group nesting accepted while skipping unknown fields.
-pub const MAX_GROUP_DEPTH : Int = 100
+pub const MAX_GROUP_DEPTH : Int32 = 100
 
 ///|
 /// Convert a wire type to its three-bit tag value.
-pub fn WireType::to_int(self : WireType) -> Int {
+pub fn WireType::to_int(self : WireType) -> Int32 {
   match self {
     Varint => 0
     Fixed64 => 1
@@ -62,7 +70,7 @@ pub fn WireType::to_int(self : WireType) -> Int {
 /// Convert a three-bit tag value to a wire type.
 ///
 /// Raises `DecodeError` for the two unused bit patterns 6 and 7.
-pub fn WireType::from_int(value : Int) -> WireType raise @types.DecodeError {
+pub fn WireType::from_int(value : Int32) -> WireType raise @types.DecodeError {
   match value {
     0 => Varint
     1 => Fixed64
@@ -89,26 +97,34 @@ pub fn WireType::is_packable(self : WireType) -> Bool {
 ///
 /// Reserved implementation numbers 19000..19999 remain decodable so that
 /// unknown fields from other producers are not rejected.
-pub fn is_field_number_in_range(number : Int) -> Bool {
+pub fn is_field_number_in_range(number : Int32) -> Bool {
   number >= MIN_FIELD_NUMBER && number <= MAX_FIELD_NUMBER
 }
 
 ///|
 /// Check whether `number` is reserved for protobuf implementations.
-pub fn is_reserved_field_number(number : Int) -> Bool {
+pub fn is_reserved_field_number(number : Int32) -> Bool {
   number >= FIRST_RESERVED_FIELD_NUMBER && number <= LAST_RESERVED_FIELD_NUMBER
 }
 
 ///|
 /// A decoded protobuf tag: a field number paired with a wire type.
 pub struct Tag {
-  field_number : Int
+  field_number : Int32
   wire_type : WireType
 } derive(Debug, Eq)
 
 ///|
+/// Explicit trait-method promotion for the derived `Debug` implementation.
+pub extend Tag with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+/// Explicit trait-method promotion for the derived `Eq` implementation.
+pub extend Tag with Eq::{equal, not_equal}
+
+///|
 /// The field number carried by a tag.
-pub fn Tag::field_number(self : Tag) -> Int {
+pub fn Tag::field_number(self : Tag) -> Int32 {
   self.field_number
 }
 
@@ -124,7 +140,7 @@ pub fn Tag::wire_type(self : Tag) -> WireType {
 /// Raises `EncodeError` when the field number is outside the protobuf range or
 /// falls inside the implementation-reserved range.
 pub fn Tag::new(
-  field_number : Int,
+  field_number : Int32,
   wire_type : WireType,
 ) -> Tag raise @types.EncodeError {
   if !is_field_number_in_range(field_number) {
@@ -145,7 +161,7 @@ pub fn Tag::encode(self : Tag) -> Bytes {
 
 ///|
 /// Number of varint bytes needed to encode a tag.
-pub fn Tag::encoded_len(self : Tag) -> Int {
+pub fn Tag::encoded_len(self : Tag) -> Int32 {
   uvarint_len(tag_value(self.field_number, self.wire_type.to_int()))
 }
 
@@ -157,7 +173,7 @@ pub fn write_tag(buffer : @buffer.Buffer, tag : Tag) -> Unit {
 
 ///|
 /// Compute the raw 32-bit tag value for a field number and wire type.
-fn tag_value(field_number : Int, wire_type : Int) -> UInt64 {
+fn tag_value(field_number : Int32, wire_type : Int32) -> UInt64 {
   (field_number.to_uint64() << 3) | wire_type.to_uint64()
 }
 
@@ -169,8 +185,8 @@ fn tag_value(field_number : Int, wire_type : Int) -> UInt64 {
 /// of range, or the wire type is 6 or 7.
 pub fn read_tag(
   bytes : Bytes,
-  offset : Int,
-) -> (Tag, Int) raise @types.DecodeError {
+  offset : Int32,
+) -> (Tag, Int32) raise @types.DecodeError {
   let (raw, next) = read_uvarint(bytes, offset)
   if raw > 0xFFFFFFFFUL {
     raise @types.TagValueOutOfRange(value=raw)

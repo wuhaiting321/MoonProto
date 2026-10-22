@@ -3,11 +3,11 @@
 
 ///|
 /// Maximum number of bytes in a base-128 varint that encodes a 64-bit value.
-pub const MAX_VARINT_BYTES : Int = 10
+pub const MAX_VARINT_BYTES : Int32 = 10
 
 ///|
 /// Number of payload bits carried by every byte except the last one.
-const VARINT_PAYLOAD_BITS : Int = 7
+const VARINT_PAYLOAD_BITS : Int32 = 7
 
 ///|
 /// Number of bytes needed to encode `value` as an unsigned varint.
@@ -22,7 +22,7 @@ const VARINT_PAYLOAD_BITS : Int = 7
 ///   assert_eq(uvarint_len(0xFFFFFFFFFFFFFFFFUL), 10)
 /// }
 /// ```
-pub fn uvarint_len(value : UInt64) -> Int {
+pub fn uvarint_len(value : UInt64) -> Int32 {
   let mut remaining = value
   let mut length = 1
   while remaining >= 0x80UL {
@@ -66,8 +66,8 @@ pub fn encode_uvarint(value : UInt64) -> Bytes {
 /// Raises `DecodeError` if the input is truncated or the encoding is invalid.
 pub fn read_uvarint(
   bytes : Bytes,
-  offset : Int,
-) -> (UInt64, Int) raise @types.DecodeError {
+  offset : Int32,
+) -> (UInt64, Int32) raise @types.DecodeError {
   let length = bytes.length()
   if offset < 0 || offset > length {
     raise @types.Truncated(offset~, needed=1, available=0)
@@ -103,13 +103,13 @@ pub fn read_uvarint(
 ///
 /// Zigzag maps small absolute values to small varints: `0 -> 0`, `-1 -> 1`,
 /// `1 -> 2`, `-2 -> 3`, and so on.
-pub fn zigzag_encode32(value : Int) -> UInt {
+pub fn zigzag_encode32(value : Int32) -> UInt32 {
   ((value << 1) ^ (value >> 31)).reinterpret_as_uint()
 }
 
 ///|
 /// Recover a signed 32-bit integer from its unsigned zigzag code.
-pub fn zigzag_decode32(value : UInt) -> Int {
+pub fn zigzag_decode32(value : UInt32) -> Int32 {
   (value >> 1).reinterpret_as_int() ^ -(value & 1U).reinterpret_as_int()
 }
 
@@ -130,7 +130,7 @@ pub fn zigzag_decode64(value : UInt64) -> Int64 {
 ///
 /// Negative `int32` values are sign-extended to 64 bits, which is why they
 /// occupy ten bytes on the wire.
-pub fn int32_to_u64(value : Int) -> UInt64 {
+pub fn int32_to_u64(value : Int32) -> UInt64 {
   value.to_int64().reinterpret_as_uint64()
 }
 
@@ -142,13 +142,13 @@ pub fn int64_to_u64(value : Int64) -> UInt64 {
 
 ///|
 /// Convert a protobuf `uint32` value to its varint payload.
-pub fn uint32_to_u64(value : UInt) -> UInt64 {
+pub fn uint32_to_u64(value : UInt32) -> UInt64 {
   value.to_uint64()
 }
 
 ///|
 /// Convert a protobuf `sint32` value to its zigzag varint payload.
-pub fn sint32_to_u64(value : Int) -> UInt64 {
+pub fn sint32_to_u64(value : Int32) -> UInt64 {
   zigzag_encode32(value).to_uint64()
 }
 
@@ -160,7 +160,7 @@ pub fn sint64_to_u64(value : Int64) -> UInt64 {
 
 ///|
 /// Interpret a varint payload as a protobuf `int32`, truncating to 32 bits.
-pub fn u64_to_int32(value : UInt64) -> Int {
+pub fn u64_to_int32(value : UInt64) -> Int32 {
   value.to_uint().reinterpret_as_int()
 }
 
@@ -172,13 +172,13 @@ pub fn u64_to_int64(value : UInt64) -> Int64 {
 
 ///|
 /// Interpret a varint payload as a protobuf `uint32`, truncating to 32 bits.
-pub fn u64_to_uint32(value : UInt64) -> UInt {
+pub fn u64_to_uint32(value : UInt64) -> UInt32 {
   value.to_uint()
 }
 
 ///|
 /// Interpret a zigzag varint payload as a protobuf `sint32`.
-pub fn u64_to_sint32(value : UInt64) -> Int {
+pub fn u64_to_sint32(value : UInt64) -> Int32 {
   zigzag_decode32(value.to_uint())
 }
 

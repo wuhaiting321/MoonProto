@@ -5,6 +5,7 @@ target/
 .moonagent/
 .mooncaches/
 *.mbti.bak
+pkg.generated.mbti
 
 # OS / editor artifacts
 .DS_Store

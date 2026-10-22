@@ -20,7 +20,7 @@ pub fn Encoder::new() -> Encoder {
 
 ///|
 /// Number of bytes written so far.
-pub fn Encoder::size(self : Encoder) -> Int {
+pub fn Encoder::size(self : Encoder) -> Int32 {
   self.buffer.length()
 }
 
@@ -48,7 +48,7 @@ pub fn Encoder::finish(self : Encoder) -> Bytes {
 /// Raises `EncodeError` when `field_number` is invalid.
 pub fn Encoder::write_length_delimited(
   self : Encoder,
-  field_number : Int,
+  field_number : Int32,
   payload : Bytes,
 ) -> Unit raise @types.EncodeError {
   let tag = @wire.Tag::new(field_number, @wire.WireType::LengthDelimited)
@@ -63,7 +63,7 @@ pub fn Encoder::write_length_delimited(
 /// MoonBit strings are encoded as UTF-8, matching the protobuf wire format.
 pub fn Encoder::write_string(
   self : Encoder,
-  field_number : Int,
+  field_number : Int32,
   value : String,
 ) -> Unit raise @types.EncodeError {
   self.write_length_delimited(field_number, @utf8.encode(value))
@@ -73,7 +73,7 @@ pub fn Encoder::write_string(
 /// Write a protobuf `bytes` field verbatim.
 pub fn Encoder::write_bytes(
   self : Encoder,
-  field_number : Int,
+  field_number : Int32,
   value : Bytes,
 ) -> Unit raise @types.EncodeError {
   self.write_length_delimited(field_number, value)

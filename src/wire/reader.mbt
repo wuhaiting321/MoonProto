@@ -10,8 +10,8 @@
 /// past the whole length-delimited payload after handing out the child.
 pub struct WireReader {
   bytes : Bytes
-  mut position : Int
-  limit : Int
+  mut position : Int32
+  limit : Int32
 }
 
 ///|
@@ -26,8 +26,8 @@ pub fn WireReader::new(bytes : Bytes) -> WireReader {
 /// Raises `DecodeError` when the window is negative or outside the input.
 pub fn WireReader::new_limited(
   bytes : Bytes,
-  start : Int,
-  end : Int,
+  start : Int32,
+  end : Int32,
 ) -> WireReader raise @types.DecodeError {
   if start < 0 || end < start || end > bytes.length() {
     raise @types.Truncated(
@@ -41,13 +41,13 @@ pub fn WireReader::new_limited(
 
 ///|
 /// Current read offset, measured from the start of the underlying byte array.
-pub fn WireReader::position(self : WireReader) -> Int {
+pub fn WireReader::position(self : WireReader) -> Int32 {
   self.position
 }
 
 ///|
 /// Number of bytes left in this reader's window.
-pub fn WireReader::remaining(self : WireReader) -> Int {
+pub fn WireReader::remaining(self : WireReader) -> Int32 {
   if self.position >= self.limit {
     0
   } else {
@@ -65,7 +65,7 @@ pub fn WireReader::is_empty(self : WireReader) -> Bool {
 /// Ensure that `count` bytes are available.
 fn WireReader::ensure(
   self : WireReader,
-  count : Int,
+  count : Int32,
 ) -> Unit raise @types.DecodeError {
   let available = self.remaining()
   if count < 0 || count > available {
@@ -105,7 +105,7 @@ pub fn WireReader::read_varint(
 /// Read one little-endian `fixed32` payload.
 pub fn WireReader::read_fixed32(
   self : WireReader,
-) -> UInt raise @types.DecodeError {
+) -> UInt32 raise @types.DecodeError {
   self.ensure(4)
   let base = self.position
   let value = self.bytes[base].to_uint() |
@@ -155,7 +155,7 @@ pub fn WireReader::read_double(
 /// byte.
 pub fn WireReader::read_length(
   self : WireReader,
-) -> Int raise @types.DecodeError {
+) -> Int32 raise @types.DecodeError {
   let length_offset = self.position
   let (raw, next) = read_uvarint(self.bytes, self.position)
   if next > self.limit {
@@ -177,7 +177,7 @@ pub fn WireReader::read_length(
 /// Read `length` raw bytes as an owned copy.
 pub fn WireReader::read_bytes(
   self : WireReader,
-  length : Int,
+  length : Int32,
 ) -> Bytes raise @types.DecodeError {
   let available = self.remaining()
   if length < 0 || length > available {
@@ -226,7 +226,7 @@ pub fn WireReader::next_tag(self : WireReader) -> Tag raise @types.DecodeError {
 /// Skip `count` bytes inside the current window.
 pub fn WireReader::skip(
   self : WireReader,
-  count : Int,
+  count : Int32,
 ) -> Unit raise @types.DecodeError {
   self.ensure(count)
   self.position = self.position + count
@@ -240,7 +240,7 @@ pub fn WireReader::skip(
 pub fn WireReader::skip_tag(
   self : WireReader,
   tag : Tag,
-  depth? : Int = 0,
+  depth~ : Int32 = 0,
 ) -> Unit raise @types.DecodeError {
   match tag.wire_type {
     Varint => {

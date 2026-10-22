@@ -14,7 +14,7 @@ fn descend(decoder : Decoder) -> Unit raise @types.DecodeError {
 
 ///|
 /// Build `levels` nested messages, each holding the previous one in field 1.
-fn wrap(levels : Int) -> Bytes raise @types.EncodeError {
+fn wrap(levels : Int32) -> Bytes raise @types.EncodeError {
   let mut message = Encoder::new()
   for _ in 0..<levels {
     let parent = Encoder::new()

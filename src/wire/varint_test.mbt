@@ -239,7 +239,9 @@ test "int32 sign extension uses ten-byte varints" {
 
 ///|
 test "typed decode helpers round-trip boundary values" {
-  let int32_values : Array[Int] = [0, 1, -1, 2147483647, -2147483648, 300, -300]
+  let int32_values : Array[Int32] = [
+    0, 1, -1, 2147483647, -2147483648, 300, -300,
+  ]
   for value in int32_values {
     let payload = int32_to_u64(value)
     assert_eq(u64_to_int32(payload), value)
@@ -255,13 +257,13 @@ test "typed decode helpers round-trip boundary values" {
     let decoded = decode_one(encode_uvarint(payload))
     assert_eq(u64_to_int64(decoded), value)
   }
-  let uint32_values : Array[UInt] = [0U, 1U, 127U, 128U, 4294967295U]
+  let uint32_values : Array[UInt32] = [0U, 1U, 127U, 128U, 4294967295U]
   for value in uint32_values {
     let payload = uint32_to_u64(value)
     assert_eq(u64_to_uint32(payload), value)
     assert_eq(u64_to_uint32(decode_one(encode_uvarint(payload))), value)
   }
-  let sint32_values : Array[Int] = [0, -1, 1, 2147483647, -2147483648]
+  let sint32_values : Array[Int32] = [0, -1, 1, 2147483647, -2147483648]
   for value in sint32_values {
     assert_eq(
       u64_to_sint32(decode_one(encode_uvarint(sint32_to_u64(value)))),

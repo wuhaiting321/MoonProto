@@ -5,7 +5,7 @@
 /// Read the next tag and assert its field number and wire type.
 fn expect_tag(
   decoder : @codec.Decoder,
-  field_number : Int,
+  field_number : Int32,
   wire_type : @wire.WireType,
 ) -> @wire.Tag raise {
   match decoder.next_tag() {

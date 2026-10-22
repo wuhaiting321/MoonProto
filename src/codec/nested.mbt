@@ -3,11 +3,11 @@
 
 ///|
 /// Maximum nested-message depth accepted by `Decoder::read_submessage`.
-pub const MAX_MESSAGE_DEPTH : Int = 100
+pub const MAX_MESSAGE_DEPTH : Int32 = 100
 
 ///|
 /// Nesting depth of this decoder. A top-level decoder has depth zero.
-pub fn Decoder::depth(self : Decoder) -> Int {
+pub fn Decoder::depth(self : Decoder) -> Int32 {
   self.depth
 }
 
@@ -22,7 +22,7 @@ pub fn Decoder::depth(self : Decoder) -> Int {
 /// child encoder first, then embed it in its parent.
 pub fn Encoder::write_message(
   self : Encoder,
-  field_number : Int,
+  field_number : Int32,
   message : Encoder,
 ) -> Unit raise @types.EncodeError {
   self.write_length_delimited(field_number, message.finish())

@@ -3,7 +3,7 @@
 
 ///|
 test "wire types use the defined three-bit values" {
-  let cases : Array[(WireType, Int)] = [
+  let cases : Array[(WireType, Int32)] = [
     (WireType::Varint, 0),
     (WireType::Fixed64, 1),
     (WireType::LengthDelimited, 2),
@@ -93,7 +93,7 @@ test "Tag::new rejects implementation-reserved field numbers" {
 
 ///|
 test "tags encode as field_number shifted left three bits" {
-  let cases : Array[(Int, WireType, Bytes)] = [
+  let cases : Array[(Int32, WireType, Bytes)] = [
     (1, WireType::Varint, b"\x08"),
     (2, WireType::LengthDelimited, b"\x12"),
     (15, WireType::LengthDelimited, b"\x7A"),
@@ -121,7 +121,7 @@ test "tag writes append to an existing buffer" {
 
 ///|
 test "tags round-trip across field-number and wire-type boundaries" {
-  let fields : Array[Int] = [1, 2, 15, 16, 2047, 2048, 536870911]
+  let fields : Array[Int32] = [1, 2, 15, 16, 2047, 2048, 536870911]
   let wire_types : Array[WireType] = [
     WireType::Varint,
     WireType::Fixed64,

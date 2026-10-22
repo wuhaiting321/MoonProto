@@ -12,7 +12,7 @@
 /// or malformed payload can never read into the following field.
 pub struct Decoder {
   reader : @wire.WireReader
-  depth : Int
+  depth : Int32
 }
 
 ///|
@@ -25,21 +25,21 @@ pub fn Decoder::new(bytes : Bytes) -> Decoder {
 /// Create a decoder over the window `[start, end)` of `bytes`.
 pub fn Decoder::new_limited(
   bytes : Bytes,
-  start : Int,
-  end : Int,
+  start : Int32,
+  end : Int32,
 ) -> Decoder raise @types.DecodeError {
   { reader: @wire.WireReader::new_limited(bytes, start, end), depth: 0, }
 }
 
 ///|
 /// Current absolute read offset in the underlying byte array.
-pub fn Decoder::position(self : Decoder) -> Int {
+pub fn Decoder::position(self : Decoder) -> Int32 {
   self.reader.position()
 }
 
 ///|
 /// Number of bytes left in this decoder's window.
-pub fn Decoder::remaining(self : Decoder) -> Int {
+pub fn Decoder::remaining(self : Decoder) -> Int32 {
   self.reader.remaining()
 }
 

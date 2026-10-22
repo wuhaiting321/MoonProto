@@ -18,4 +18,6 @@ keywords = [
 
 preferred_target = "wasm"
 
+warnings = "-test_unqualified_package"
+
 description = "Pure MoonBit Protocol Buffers v3 wire-format encoder and decoder."

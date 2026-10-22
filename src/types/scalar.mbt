@@ -25,6 +25,14 @@ pub(all) enum ScalarType {
 } derive(Debug, Eq)
 
 ///|
+/// Explicit trait-method promotion for the derived `Debug` implementation.
+pub extend ScalarType with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+/// Explicit trait-method promotion for the derived `Eq` implementation.
+pub extend ScalarType with Eq::{equal, not_equal}
+
+///|
 /// Human-readable protobuf spelling of a scalar type.
 pub fn ScalarType::name(self : ScalarType) -> String {
   match self {
@@ -50,19 +58,27 @@ pub fn ScalarType::name(self : ScalarType) -> String {
 pub(all) enum ScalarValue {
   Double(Double)
   Float(Float)
-  Int32(Int)
+  Int32(Int32)
   Int64(Int64)
-  UInt32(UInt)
+  UInt32(UInt32)
   UInt64(UInt64)
-  SInt32(Int)
+  SInt32(Int32)
   SInt64(Int64)
-  Fixed32(UInt)
+  Fixed32(UInt32)
   Fixed64(UInt64)
-  SFixed32(Int)
+  SFixed32(Int32)
   SFixed64(Int64)
   Bool(Bool)
-  Enum(Int)
+  Enum(Int32)
 } derive(Debug, Eq)
+
+///|
+/// Explicit trait-method promotion for the derived `Debug` implementation.
+pub extend ScalarValue with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
+/// Explicit trait-method promotion for the derived `Eq` implementation.
+pub extend ScalarValue with Eq::{equal, not_equal}
 
 ///|
 /// The protobuf scalar type of a value.

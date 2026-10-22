@@ -24,7 +24,7 @@ pub fn scalar_wire_type(scalar_type : @types.ScalarType) -> @wire.WireType {
 
 ///|
 /// Number of payload bytes a scalar occupies on the wire, excluding its tag.
-pub fn scalar_payload_len(value : @types.ScalarValue) -> Int {
+pub fn scalar_payload_len(value : @types.ScalarValue) -> Int32 {
   match value {
     @types.ScalarValue::Double(_) => 8
     @types.ScalarValue::Float(_) => 4
@@ -82,7 +82,7 @@ fn write_scalar_payload(
 /// Write one scalar field: a tag followed by the scalar payload.
 pub fn Encoder::write_scalar_field(
   self : Encoder,
-  field_number : Int,
+  field_number : Int32,
   value : @types.ScalarValue,
 ) -> Unit raise @types.EncodeError {
   let tag = @wire.Tag::new(field_number, scalar_wire_type(value.scalar_type()))
