@@ -1,1 +1,7 @@
 // Black-box integration tests for the MoonProto public API.
+
+import {
+  "wuhaiting321/moonproto/src/codec",
+  "wuhaiting321/moonproto/src/types",
+  "wuhaiting321/moonproto/src/wire",
+} for "test"
