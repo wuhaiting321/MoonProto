@@ -22,7 +22,7 @@ packed repeated、嵌套消息与 group 安全跳过；不解析 `.proto`、不�
 | 项目方向 | 序列化与数据交换基础库 / Protocol Buffers v3 Wire Format |
 | 是否为移植项目 | 否，原创项目 |
 | 模块名 | `wuhaiting321/moonproto`（遵循 mooncakes.io 的 `<author>/<module>` 命名规范） |
-| 代码规模 | 1296 行库源码 + 2235 行测试 + 97 行可运行示例，25 个 `.mbt` 文件，合计 3628 行 |
+| 代码规模 | 1296 行库源码 + 2235 行测试 + 332 行可运行示例，27 个 `.mbt` 文件，合计 3863 行 |
 | 测试状态 | `moon test` 全部通过（109 个用例，0 失败） |
 | 构建状态 | 默认目标与 `moon check --target all --deny-warn` 均零错误、零告警；`moon fmt --check` 通过 |
 | 开源许可证 | Apache-2.0 |
@@ -61,41 +61,64 @@ wire format 的每个原语（varint、zigzag、tag、长度窗口、标量、pa
 
 ## 三、典型使用场景
 
-三个场景都由 [examples/basic/main.mbt](./examples/basic/main.mbt) 用同一份代码真实跑通，
-输入是内嵌的字节流，不读取文件、不请求宿主能力。
+三个场景分别由三个独立可执行包实现，各有自己的业务域、字段约定与真实输出：
 
-### 3.1 构造并序列化一条带嵌套消息的记录
+| 场景 | 示例包 | 业务域 | 主要能力 |
+| --- | --- | --- | --- |
+| 3.1 设备遥测批量上报 | [examples/telemetry](./examples/telemetry/main.mbt) | 物联网遥测 | 多标量、packed repeated、采样聚合 |
+| 3.2 聊天消息解析与前向兼容 | [examples/chat](./examples/chat/main.mbt) | 即时通讯 | 嵌套消息、bytes、未知字段跳过 |
+| 3.3 协议调试与畸形输入定位 | [examples/basic](./examples/basic/main.mbt) | 协议调试 | 编解码往返、异常偏移定位 |
 
-- **输入**：字段 1 `uint32 = 150`；字段 2 为子消息 `{ 1: string "leaf", 2: sint32 -7 }`
-- **调用**：`@codec.Encoder::write_scalar_field`、`write_string`、`write_message`
-- **输出**：13 字节 `08 96 01 12 08 0a 04 6c 65 61 66 10 0d`
-- **要点**：子消息先被构造成独立 `Encoder`，再作为长度界定 payload 嵌入父消息；
-  `sint32 -7` 经 zigzag 编为 `0d`，`uint32 150` 编为 `96 01`。
+所有示例只读取内嵌字节，不读取文件、不请求宿主能力。
 
-### 3.2 增量解码并用子窗口读取嵌套消息
+### 3.1 设备遥测批量上报（边缘网关 → 云端）
 
-- **输入**：上一场景产生的 13 字节
-- **调用**：`next_tag` → `read_scalar_field` / `read_submessage`
-- **输出**：`field 1 uint32 = 150`、`field 2 message depth = 1`，
-  子消息内 `field 1 string = leaf`、`field 2 sint32 = -7`
-- **要点**：`read_submessage` 返回的子解码器窗口被限制在声明长度内，父解码器
-  同时越过整段 payload；子消息读不完也不会污染后续兄弟字段。
+- **业务背景**：设备把一批传感器采样批量上报，云端没有 `.proto`，只凭字段号解析。
+- **字段约定**：1 `string device_id`；2 `uint64 collected_at_ms`；
+  3 `double temperature_c`；4 `uint32 battery_mv`；5 `enum status`；
+  6 `packed sint32 samples`
+- **调用**：`write_string`、`write_scalar_field`（UInt64 / Double / UInt32 / Enum）、
+  `write_packed_scalar_field`；云端用 `read_packed_scalar_field` 取回采样并汇总
+- **输出**（`moon run examples/telemetry`）：
 
-### 3.3 拒绝截断的恶意输入
-
-- **输入**：`08 80`（字段 1 声明为 varint，但续行字节后没有终止字节）
-- **调用**：`read_scalar_field`
-- **输出**：`truncated input at offset 1: needed 1 bytes, 0 available`
-- **要点**：解码器不 panic、不返回半成品，而是抛出带绝对偏移与所需/可用字节数的
-  `DecodeError::Truncated`。
-
-在仓库根目录运行：
-
-```bash
-moon run examples/basic
+```text
+uplink batch 41 bytes: 0a 0a 73 65 6e 73 6f 72 2d 30 34 32 10 80 a8 a4 e0 ac 32 19 00 00 00 00 00 80 37 40 20 f4 1c 28 02 32 06 05 00 0a 18 0f 10
+device=sensor-042 collected_at=1730000000000
+temperature=23.5C battery=3700mV status=2(OK)
+samples=6 min=-8 max=12 total=14
 ```
 
-实际输出：
+- **要点**：6 个采样值共用 1 个 tag 与 1 个长度前缀，没有逐元素 tag；`sint32` 先
+  zigzag 再顺序拼接；`double` 以 8 字节小端承载。云端无需生成代码即可还原业务指标。
+
+### 3.2 聊天消息解析与前向兼容（新版客户端 → 旧版服务端）
+
+- **业务背景**：客户端升级后新增字段 9，旧服务端不认识该字段，但不能因此拒收整条消息。
+- **字段约定**：1 `string sender`；2 `uint32 sent_at`；3 子消息
+  `{ 1: string text, 2: bytes attachment }`；9 `string client_hint`（旧解析器未知）
+- **调用**：`write_message` 构造嵌套正文、`write_bytes` 写入附件原始字节；
+  解码端用 `read_submessage` 进入子窗口，用 `skip_tag` 跳过字段 9
+- **输出**（`moon run examples/chat`）：
+
+```text
+chat message 57 bytes: 0a 05 61 6c 69 63 65 10 80 e9 f6 b8 06 1a 1c 0a 14 68 65 6c 6c 6f 20 66 72 6f 6d 20 4d 6f 6f 6e 50 72 6f 74 6f 12 04 89 50 4e 47 4a 0c 73 65 6e 74 2d 66 72 6f 6d 2d 76 32
+sender=alice sent_at=1730000000
+text=hello from MoonProto
+attachment=4 bytes: 89 50 4e 47
+skipped 1 unknown field(s), message still parsed
+```
+
+- **要点**：旧解析器只按已知字段号读取，未知字段按 wire type 原位跳过，其余字段照常
+  还原；附件 `bytes` 原样返回，不经过 UTF-8 校验，因此可承载任意二进制。
+
+### 3.3 协议调试与畸形输入定位（抓包回放 → 错误报告）
+
+- **业务背景**：调试协议时既要还原合法报文，也要把畸形字节的失败位置写进报告。
+- **输入**：先构造 `{ 1: uint32 150, 2: { 1: "leaf", 2: sint32 -7 } }`，得到 13 字节；
+  再回放截断的 `08 80`。
+- **调用**：`write_scalar_field` / `write_string` / `write_message`；解码端 `next_tag`、
+  `read_scalar_field`、`read_submessage`
+- **输出**（`moon run examples/basic`）：
 
 ```text
 encoded 13 bytes: 08 96 01 12 08 0a 04 6c 65 61 66 10 0d
@@ -105,6 +128,10 @@ field 2 message depth = 1
   field 2 sint32 = -7
 malformed input rejected: truncated input at offset 1: needed 1 bytes, 0 available
 ```
+
+- **要点**：子消息窗口被限制在声明长度内，父解码器同时越过整段 payload；截断输入
+  不 panic、不返回半成品，而是抛出带绝对偏移与所需/可用字节数的
+  `DecodeError::Truncated`，可直接写进调试报告。
 
 ## 四、核心功能范围
 
@@ -166,11 +193,15 @@ cd MoonProto
 
 ### 5.3 运行示例
 
+三个独立示例分别对应第三节的三个业务场景：
+
 ```bash
-moon run examples/basic
+moon run examples/telemetry   # 设备遥测批量上报
+moon run examples/chat        # 聊天消息与前向兼容
+moon run examples/basic       # 编解码往返与畸形输入
 ```
 
-输出与第三节列出的五个字段/错误结果一致；示例只读取内嵌字节，可离线重复运行。
+每个示例只读取内嵌字节，可离线重复运行，输出与第三节逐行一致。
 
 ### 5.4 构建与验证
 
@@ -181,7 +212,7 @@ moon check --target all --deny-warn # Native / Wasm / WasmGC / JS
 moon test --deny-warn               # 109 个用例
 ```
 
-仓库是**库**，`examples/basic` 只是演示公开 API 的可执行包，不提供通用命令行工具。
+仓库是**库**，`examples/*` 只是演示公开 API 的可执行包，不提供通用命令行工具。
 测试数据全部内嵌在源码中，离线可跑。
 
 ### 5.5 作为依赖使用
@@ -222,7 +253,7 @@ fn round_trip() -> Bytes raise {
 | `src/codec` | `Encoder` / `Decoder`、标量、packed、嵌套消息与 group 跳过 | 448 行 |
 
 依赖方向严格单向：`codec → wire → types`。底层包互不依赖，不存在环。上表合计
-1296 行，另有 2235 行测试与 97 行示例，总计 3628 行，低于 5000 行的项目硬约束。
+1296 行，另有 2235 行测试与 332 行示例，总计 3863 行，低于 5000 行的项目硬约束。
 
 ### 6.2 核心技术实现
 
@@ -292,7 +323,8 @@ Bytes ─► WireReader 窗口
 - **黑盒集成**：`test/` 作为独立包，只通过公开 API 调用 `codec` / `wire` / `types`，
   覆盖嵌套消息树往返、子窗口隔离、空子消息、group 跳过、递归上限、非法 schema
   与截断前缀，避免"用私有函数验证私有函数"。
-- **示例实跑**：`moon run examples/basic` 在默认 WASI 目标上真实执行，输出见第三节。
+- **示例实跑**：`examples/telemetry`、`examples/chat`、`examples/basic` 三个独立可执行包
+  均在默认 WASI 目标上真实执行，输出见第三节。
 - **本地多后端**：`moon check --target all --deny-warn` 覆盖四个后端，零告警。
 - **已知验证缺口**：尚未接入官方 protobuf conformance 测试套件，也尚未引入
   外部解码器做交叉验证；这两项已列入后续计划，README 不以未完成的验证作为结论。
@@ -355,7 +387,7 @@ MoonBit 官方标准库 `moonbitlang/core`。
 - [x] Packed repeated fields
 - [x] 嵌套消息递归与 100 层深度限制
 - [x] 错误 ADT、诊断文本与穷举健壮性测试
-- [x] 黑盒集成测试与可运行示例
+- [x] 黑盒集成测试与 3 个独立可运行示例
 - [x] API 文档
 - [ ] 接入 protobuf conformance 测试子集
 - [ ] 增加随机 fuzz / property-based 往返测试
