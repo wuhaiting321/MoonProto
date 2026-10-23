@@ -35,17 +35,12 @@ Protocol Buffers 是 RPC、遥测、移动端持久化与设备通信的事实�
 三种方式承载，嵌套消息与 packed 数组再用长度前缀切出边界。凡是要处理"别人发来的字节"
 的场景——网关、调试器、协议转换、日志解析、WASI 插件——都需要一个可独立使用的 wire 层。
 
-**官方运行时已经提供无需代码生成的 wire 原语。** `moonbitlang/protobuf` 0.1.2 的
-`read_tag`、`read_varint32`、`read_string`、`read_unknown`、`read_packed` 等函数均为
-`pub fn`，调用方不需要 `.proto` 或代码生成即可直接读取字节。因此本项目**不以"生态空白"
-作为立论**，"逐字段动态读写"本身也不再是差异化理由。
-
-**MoonProto 的定位是 wire 原语之上的诊断与加固层。** 它同样提供 `Encoder` / `Decoder`，
-但把重心放在官方运行时未覆盖、且直接影响线上排障与恶意输入处理的能力上：
+**MoonProto 是一个 wire 级诊断与加固层。** 它提供 `Encoder` / `Decoder` 与全套 wire 原语，
+并把重心放在"手上只有字节、且字节可能是恶意构造"时的可用性上：
 
 1. **无 schema 字段布局查看**：`@diag.inspect` 不需要字段类型即可输出字段号、wire type、
-   tag 与 payload 的绝对偏移、payload 长度和十六进制预览，`@diag.render` 生成可读树。
-   这对应 `protoc --decode_raw` 的使用场景，而官方运行时只按调用方给定的类型读取。
+   tag 与 payload 的绝对偏移、payload 长度和十六进制预览，`@diag.render` 生成可读树，
+   对应 `protoc --decode_raw` 的使用场景。
 2. **完整的错误定位**：15 个 `DecodeError` 变体中 14 个携带绝对字节偏移；
    `@diag.error_context` 额外给出失败偏移附近的十六进制窗口与 `^^` 指针，
    可直接贴进 Issue 或调试报告。
