@@ -137,7 +137,7 @@ test "read_scalar_field rejects mismatched wire types" {
           )
           false
         } catch {
-          @types.UnexpectedWireType(expected~, actual~) =>
+          @types.UnexpectedWireType(expected~, actual~, ..) =>
             expected == 5 && actual == 0
           _ => false
         },
@@ -155,7 +155,7 @@ test "read_scalar_field rejects mismatched wire types" {
           )
           false
         } catch {
-          @types.UnexpectedWireType(expected~, actual~) =>
+          @types.UnexpectedWireType(expected~, actual~, ..) =>
             expected == 0 && actual == 2
           _ => false
         },

@@ -178,7 +178,7 @@ test "read_submessage rejects non-length-delimited tags" {
           let _ = decoder.read_submessage(tag)
           false
         } catch {
-          @types.UnexpectedWireType(expected~, actual~) =>
+          @types.UnexpectedWireType(expected~, actual~, ..) =>
             expected == 2 && actual == 0
           _ => false
         },

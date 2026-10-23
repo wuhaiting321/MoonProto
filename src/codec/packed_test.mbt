@@ -259,7 +259,7 @@ test "decoder rejects partial fixed-width packed elements" {
           )
           false
         } catch {
-          @types.InvalidPackedLength(length~, element_width~) =>
+          @types.InvalidPackedLength(length~, element_width~, ..) =>
             length == 3 && element_width == 4
           _ => false
         },
@@ -302,7 +302,7 @@ test "packed decoder validates the wire type" {
           )
           false
         } catch {
-          @types.UnexpectedWireType(expected~, actual~) =>
+          @types.UnexpectedWireType(expected~, actual~, ..) =>
             expected == 2 && actual == 0
           _ => false
         },

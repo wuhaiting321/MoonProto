@@ -1,0 +1,7 @@
+// Copyright 2026 wuhaiting321
+// Apache License 2.0
+
+import {
+  "wuhaiting321/moonproto/src/wire",
+  "wuhaiting321/moonproto/src/types",
+}

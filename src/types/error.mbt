@@ -15,11 +15,11 @@ pub(all) suberror DecodeError {
   /// The tenth varint byte carried bits outside the 64-bit range.
   VarintOverflow(offset~ : Int32)
   /// A tag used a wire type outside the six defined protobuf wire types.
-  UnknownWireType(value~ : Int32)
+  UnknownWireType(offset~ : Int32, value~ : Int32)
   /// A tag carried field number zero or a number above the protobuf maximum.
-  InvalidFieldNumber(field_number~ : Int32)
+  InvalidFieldNumber(offset~ : Int32, field_number~ : Int32)
   /// A tag varint carried more than the 32 bits a valid tag can occupy.
-  TagValueOutOfRange(value~ : UInt64)
+  TagValueOutOfRange(offset~ : Int32, value~ : UInt64)
   /// A length-delimited field declared more bytes than the input contains.
   LengthOutOfBounds(offset~ : Int32, length~ : UInt64, remaining~ : Int32)
   /// A group was closed without a matching start-group tag.
@@ -30,12 +30,14 @@ pub(all) suberror DecodeError {
   UnterminatedGroup(offset~ : Int32)
   /// Nested groups exceeded the configured safety limit.
   RecursionLimitExceeded(limit~ : Int32)
+  /// Schema-free inspection recorded more fields than the configured budget.
+  FieldLimitExceeded(offset~ : Int32, limit~ : Int32)
   /// A string field contained bytes that are not valid UTF-8.
   InvalidUtf8(offset~ : Int32)
   /// A field tag used a wire type that cannot carry the requested scalar.
-  UnexpectedWireType(expected~ : Int32, actual~ : Int32)
+  UnexpectedWireType(offset~ : Int32, expected~ : Int32, actual~ : Int32)
   /// A fixed-width packed payload was not a multiple of its element width.
-  InvalidPackedLength(length~ : Int32, element_width~ : Int32)
+  InvalidPackedLength(offset~ : Int32, length~ : Int32, element_width~ : Int32)
 } derive(Debug, Eq)
 
 ///|
@@ -65,10 +67,10 @@ pub fn DecodeError::message(self : DecodeError) -> String {
       "varint at offset " + offset.to_string() + " exceeds 10 bytes"
     VarintOverflow(offset~) =>
       "varint at offset " + offset.to_string() + " overflows 64 bits"
-    UnknownWireType(value~) => "unknown wire type " + value.to_string()
-    InvalidFieldNumber(field_number~) =>
+    UnknownWireType(value~, ..) => "unknown wire type " + value.to_string()
+    InvalidFieldNumber(field_number~, ..) =>
       "invalid field number " + field_number.to_string()
-    TagValueOutOfRange(value~) =>
+    TagValueOutOfRange(value~, ..) =>
       "tag value " + value.to_string() + " exceeds 32 bits"
     LengthOutOfBounds(offset~, length~, remaining~) =>
       "length " +
@@ -91,13 +93,18 @@ pub fn DecodeError::message(self : DecodeError) -> String {
       "unterminated group at offset " + offset.to_string()
     RecursionLimitExceeded(limit~) =>
       "recursion limit " + limit.to_string() + " exceeded"
+    FieldLimitExceeded(offset~, limit~) =>
+      "field limit " +
+      limit.to_string() +
+      " exceeded at offset " +
+      offset.to_string()
     InvalidUtf8(offset~) => "invalid UTF-8 at offset " + offset.to_string()
-    UnexpectedWireType(expected~, actual~) =>
+    UnexpectedWireType(expected~, actual~, ..) =>
       "unexpected wire type " +
       actual.to_string() +
       ", expected " +
       expected.to_string()
-    InvalidPackedLength(length~, element_width~) =>
+    InvalidPackedLength(length~, element_width~, ..) =>
       "packed length " +
       length.to_string() +
       " is not a multiple of " +

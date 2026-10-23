@@ -7,7 +7,8 @@ WASM/WASI 沙箱中运行，零 FFI。
 - 版本：0.1.0
 - 许可证：Apache-2.0
 - 仓库：https://github.com/wuhaiting321/MoonProto
-- 可运行示例：[examples/basic/main.mbt](../examples/basic/main.mbt)
+- 可运行示例：[examples/basic/main.mbt](../examples/basic/main.mbt)、
+  [examples/inspect/main.mbt](../examples/inspect/main.mbt)
 
 ## 包结构
 
@@ -16,8 +17,9 @@ WASM/WASI 沙箱中运行，零 FFI。
 | `types` | `wuhaiting321/moonproto/src/types` | 标量类型/值 ADT、`DecodeError`、`EncodeError` |
 | `wire` | `wuhaiting321/moonproto/src/wire` | varint、zigzag、tag、带边界检查的 `WireReader` |
 | `codec` | `wuhaiting321/moonproto/src/codec` | `Encoder`、`Decoder`、标量/packed/嵌套消息编解码 |
+| `diag` | `wuhaiting321/moonproto/src/diag` | 无 schema 布局查看、树形渲染、错误偏移与 hex 上下文 |
 
-依赖方向严格单向：`codec` → `wire` → `types`。
+依赖方向严格单向：`codec` → `wire` → `types`，`diag` → `wire` → `types`。
 
 ## 快速开始
 
@@ -206,6 +208,42 @@ while !decoder.is_empty() {
 | `next_tag() -> Tag` | 读取 tag |
 | `skip(count)` / `skip_tag(tag, depth?=0)` | 跳过 payload，group 递归匹配 end-group |
 
+## 诊断 API（`@diag`）
+
+诊断包不需要 schema：字段类型由 wire type 推断，嵌套消息只在 payload 恰好构成完整合法
+字段序列时展开（启发式，类似 `protoc --decode_raw`）。
+
+| API | 说明 |
+|---|---|
+| `inspect(bytes, options?=InspectOptions::default()) -> Array[WireField] raise DecodeError` | 遍历所有字段并记录布局；畸形输入抛 `DecodeError`，超预算抛 `FieldLimitExceeded` |
+| `render(fields) -> String` | 输出缩进树，每行含 `tag@` / `payload@` 绝对偏移、`len=` 与预览 |
+| `InspectOptions::default() -> InspectOptions` | `max_fields=4096`、`max_depth=32`、`preview_bytes=16` |
+| `error_offset(error) -> Int32?` | 提取失败偏移；`RecursionLimitExceeded` 等无偏移错误返回 `None` |
+| `error_context(bytes, error, before?=4, after?=4) -> String` | `message()` + 偏移 + 附近 hex 窗口 + `^^` 指针 |
+
+`WireField` 字段：
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `field_number` | `Int` | 字段号 |
+| `wire_type` | `WireType` | 0–5 |
+| `tag_offset` | `Int` | tag 在原始字节中的绝对偏移 |
+| `payload_offset` | `Int` | payload 起始绝对偏移（跳过 tag 与长度前缀） |
+| `payload_length` | `Int` | payload 字节数（varint 为实际编码长度） |
+| `preview` | `String` | varint 为十进制值，fixed/length-delimited 为截断 hex |
+| `children` | `Array[WireField]` | 试探性解析出的子字段，可能为空 |
+
+示例：
+
+```moonbit
+let layout = @diag.render(@diag.inspect(bytes))
+println(layout)
+// field 1 varint tag@0 payload@1 len=1 1
+// field 2 length-delimited tag@2 payload@4 len=8 0a 04 6c 65 61 66 10 0d
+//   field 1 length-delimited tag@4 payload@6 len=4 6c 65 61 66
+//   field 2 varint tag@10 payload@11 len=1 13
+```
+
 ## 错误处理
 
 所有解码失败都抛出结构化 `DecodeError`，不会 panic。
@@ -217,17 +255,18 @@ while !decoder.is_empty() {
 | `Truncated` | 输入在读取完成前结束 | `offset`、`needed`、`available` |
 | `VarintTooLong` | varint 超过 10 字节 | `offset` |
 | `VarintOverflow` | 第 10 字节携带超出 64 位的位 | `offset` |
-| `UnknownWireType` | wire type 为 6 或 7 | `value` |
-| `InvalidFieldNumber` | 字段号为 0 或超过 536870911 | `field_number` |
-| `TagValueOutOfRange` | tag varint 超过 32 位 | `value` |
+| `UnknownWireType` | wire type 为 6 或 7 | `offset`、`value` |
+| `InvalidFieldNumber` | 字段号为 0 或超过 536870911 | `offset`、`field_number` |
+| `TagValueOutOfRange` | tag varint 超过 32 位 | `offset`、`value` |
 | `LengthOutOfBounds` | 声明长度超过剩余字节 | `offset`、`length`、`remaining` |
 | `UnexpectedEndGroup` | 没有对应 start-group 的 end-group | `offset` |
 | `MismatchedEndGroup` | end-group 字段号与 start-group 不一致 | `offset`、`expected`、`actual` |
 | `UnterminatedGroup` | 输入在 group 关闭前结束 | `offset` |
 | `RecursionLimitExceeded` | 嵌套超过 100 层 | `limit` |
+| `FieldLimitExceeded` | `diag.inspect` 记录字段数超过预算 | `offset`、`limit` |
 | `InvalidUtf8` | 字符串字段包含非法 UTF-8 | `offset` |
-| `UnexpectedWireType` | tag 的 wire type 与期望不符 | `expected`、`actual` |
-| `InvalidPackedLength` | 定宽 packed 长度不是元素宽度整数倍 | `length`、`element_width` |
+| `UnexpectedWireType` | tag 的 wire type 与期望不符 | `offset`、`expected`、`actual` |
+| `InvalidPackedLength` | 定宽 packed 长度不是元素宽度整数倍 | `offset`、`length`、`element_width` |
 
 每个变体都提供 `message() -> String`：
 
@@ -298,6 +337,28 @@ malformed input rejected: truncated input at offset 1: needed 1 bytes, 0 availab
 该输出同时验证了：tag 编码、varint、length-delimited、嵌套子消息、zigzag，
 以及截断输入的错误诊断。
 
+无 schema 布局与 hex 错误上下文见 [examples/inspect](../examples/inspect)：
+
+```bash
+moon run examples/inspect
+```
+
+```text
+captured packet 21 bytes: 08 01 12 08 0a 04 6c 65 61 66 10 0d 1d 78 56 34 12 4a 02 76 32
+layout:
+field 1 varint tag@0 payload@1 len=1 1
+field 2 length-delimited tag@2 payload@4 len=8 0a 04 6c 65 61 66 10 0d
+  field 1 length-delimited tag@4 payload@6 len=4 6c 65 61 66
+  field 2 varint tag@10 payload@11 len=1 13
+field 3 fixed32 tag@12 payload@13 len=4 12 34 56 78
+field 9 length-delimited tag@17 payload@19 len=2 76 32
+malformed packet rejected:
+length 5 at offset 4 exceeds 2 remaining bytes
+  offset 4 of 7
+   08 96 01 12 05 61 62
+               ^^
+```
+
 ## 验证
 
 ```bash
@@ -306,5 +367,5 @@ moon check --deny-warn
 moon test
 ```
 
-测试覆盖 varint 边界、wire type/tag、string/bytes、全部标量类型、packed、嵌套消息、
-group 跳过，以及 65,536 种两字节输入的健壮性穷举。
+测试共 119 个用例，覆盖 varint 边界、wire type/tag、string/bytes、全部标量类型、packed、
+嵌套消息、group 跳过、无 schema 布局与错误上下文，以及 65,536 种两字节输入的健壮性穷举。

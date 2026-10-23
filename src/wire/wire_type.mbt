@@ -69,8 +69,13 @@ pub fn WireType::to_int(self : WireType) -> Int32 {
 ///|
 /// Convert a three-bit tag value to a wire type.
 ///
-/// Raises `DecodeError` for the two unused bit patterns 6 and 7.
-pub fn WireType::from_int(value : Int32) -> WireType raise @types.DecodeError {
+/// Raises `DecodeError` for the two unused bit patterns 6 and 7. `offset` is
+/// the position of the tag that carried the invalid value; callers that invoke
+/// this function directly may omit it.
+pub fn WireType::from_int(
+  value : Int32,
+  offset~ : Int32 = -1,
+) -> WireType raise @types.DecodeError {
   match value {
     0 => Varint
     1 => Fixed64
@@ -78,7 +83,7 @@ pub fn WireType::from_int(value : Int32) -> WireType raise @types.DecodeError {
     3 => StartGroup
     4 => EndGroup
     5 => Fixed32
-    _ => raise @types.UnknownWireType(value~)
+    _ => raise @types.UnknownWireType(offset~, value~)
   }
 }
 
@@ -189,13 +194,13 @@ pub fn read_tag(
 ) -> (Tag, Int32) raise @types.DecodeError {
   let (raw, next) = read_uvarint(bytes, offset)
   if raw > 0xFFFFFFFFUL {
-    raise @types.TagValueOutOfRange(value=raw)
+    raise @types.TagValueOutOfRange(offset~, value=raw)
   }
   let field_number = (raw >> 3).to_uint().reinterpret_as_int()
   if !is_field_number_in_range(field_number) {
-    raise @types.InvalidFieldNumber(field_number~)
+    raise @types.InvalidFieldNumber(offset~, field_number~)
   }
   let wire_value = (raw & 7UL).to_uint().reinterpret_as_int()
-  let wire_type = WireType::from_int(wire_value)
+  let wire_type = WireType::from_int(wire_value, offset~)
   ({ field_number, wire_type, }, next)
 }

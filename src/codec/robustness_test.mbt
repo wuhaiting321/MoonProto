@@ -107,7 +107,7 @@ test "structured decode errors carry offsets and sizes" {
       let _ = @wire.read_tag(b"\x00", 0)
       false
     } catch {
-      @types.InvalidFieldNumber(field_number~) => field_number == 0
+      @types.InvalidFieldNumber(field_number~, ..) => field_number == 0
       _ => false
     },
   )
@@ -116,7 +116,7 @@ test "structured decode errors carry offsets and sizes" {
       let _ = @wire.read_tag(b"\x0E", 0)
       false
     } catch {
-      @types.UnknownWireType(value~) => value == 6
+      @types.UnknownWireType(value~, ..) => value == 6
       _ => false
     },
   )
@@ -125,7 +125,7 @@ test "structured decode errors carry offsets and sizes" {
       let _ = @wire.read_tag(b"\x80\x80\x80\x80\x10", 0)
       false
     } catch {
-      @types.TagValueOutOfRange(value~) => value == 0x100000000UL
+      @types.TagValueOutOfRange(value~, ..) => value == 0x100000000UL
       _ => false
     },
   )
@@ -188,7 +188,10 @@ test "decode error messages are actionable" {
     @types.VarintTooLong(offset=4).message(),
     "varint at offset 4 exceeds 10 bytes",
   )
-  assert_eq(@types.UnknownWireType(value=6).message(), "unknown wire type 6")
+  assert_eq(
+    @types.UnknownWireType(offset=0, value=6).message(),
+    "unknown wire type 6",
+  )
   assert_eq(
     @types.LengthOutOfBounds(offset=1, length=5UL, remaining=3).message(),
     "length 5 at offset 1 exceeds 3 remaining bytes",
@@ -198,11 +201,11 @@ test "decode error messages are actionable" {
     "end-group field 2 does not match start-group field 1 at offset 1",
   )
   assert_eq(
-    @types.UnexpectedWireType(expected=2, actual=0).message(),
+    @types.UnexpectedWireType(offset=1, expected=2, actual=0).message(),
     "unexpected wire type 0, expected 2",
   )
   assert_eq(
-    @types.InvalidPackedLength(length=3, element_width=4).message(),
+    @types.InvalidPackedLength(offset=1, length=3, element_width=4).message(),
     "packed length 3 is not a multiple of 4",
   )
   assert_eq(

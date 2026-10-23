@@ -25,7 +25,7 @@ test "wire types 6 and 7 are rejected" {
         let _ = WireType::from_int(value)
         false
       } catch {
-        @types.UnknownWireType(_) => true
+        @types.UnknownWireType(..) => true
         _ => false
       },
     )
@@ -157,7 +157,7 @@ test "read_tag rejects field number zero" {
       let _ = read_tag(b"\x00", 0)
       false
     } catch {
-      @types.InvalidFieldNumber(field_number~) => field_number == 0
+      @types.InvalidFieldNumber(field_number~, ..) => field_number == 0
       _ => false
     },
   )
@@ -171,7 +171,7 @@ test "read_tag rejects unknown wire types 6 and 7" {
         let _ = read_tag(bytes, 0)
         false
       } catch {
-        @types.UnknownWireType(_) => true
+        @types.UnknownWireType(..) => true
         _ => false
       },
     )
@@ -186,7 +186,7 @@ test "read_tag rejects field numbers above 2^29 - 1" {
       let _ = read_tag(encoded, 0)
       false
     } catch {
-      @types.TagValueOutOfRange(_) => true
+      @types.TagValueOutOfRange(..) => true
       _ => false
     },
   )

@@ -237,7 +237,7 @@ test "malformed nested payloads raise structured errors" {
       )
       false
     } catch {
-      @types.InvalidPackedLength(length~, element_width~) =>
+      @types.InvalidPackedLength(length~, element_width~, ..) =>
         length == 3 && element_width == 4
       _ => false
     },
@@ -249,7 +249,7 @@ test "malformed nested payloads raise structured errors" {
       let _ = wire_decoder.read_submessage(wire_tag)
       false
     } catch {
-      @types.UnexpectedWireType(expected~, actual~) =>
+      @types.UnexpectedWireType(expected~, actual~, ..) =>
         expected == 2 && actual == 0
       _ => false
     },
@@ -260,7 +260,7 @@ test "malformed nested payloads raise structured errors" {
       let _ = zero_field.next_tag()
       false
     } catch {
-      @types.InvalidFieldNumber(field_number~) => field_number == 0
+      @types.InvalidFieldNumber(field_number~, ..) => field_number == 0
       _ => false
     },
   )

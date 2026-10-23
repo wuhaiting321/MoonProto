@@ -151,6 +151,7 @@ pub fn Decoder::read_scalar_field(
   let expected = scalar_wire_type(scalar_type)
   if tag.wire_type() != expected {
     raise @types.UnexpectedWireType(
+      offset=self.reader.position(),
       expected=expected.to_int(),
       actual=tag.wire_type().to_int(),
     )

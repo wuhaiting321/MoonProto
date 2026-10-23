@@ -43,6 +43,7 @@ pub fn Decoder::read_submessage(
 ) -> Decoder raise @types.DecodeError {
   if tag.wire_type() != @wire.WireType::LengthDelimited {
     raise @types.UnexpectedWireType(
+      offset=self.reader.position(),
       expected=@wire.WireType::LengthDelimited.to_int(),
       actual=tag.wire_type().to_int(),
     )

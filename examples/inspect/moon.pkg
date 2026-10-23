@@ -1,0 +1,8 @@
+// Copyright 2026 wuhaiting321
+// Apache License 2.0
+
+pkgtype(kind: "executable")
+
+import {
+  "wuhaiting321/moonproto/src/diag",
+}

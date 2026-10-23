@@ -53,6 +53,7 @@ pub fn Decoder::read_packed_scalar_field(
 ) -> Array[@types.ScalarValue] raise @types.DecodeError {
   if tag.wire_type() != @wire.WireType::LengthDelimited {
     raise @types.UnexpectedWireType(
+      offset=self.reader.position(),
       expected=@wire.WireType::LengthDelimited.to_int(),
       actual=tag.wire_type().to_int(),
     )
@@ -70,7 +71,11 @@ pub fn Decoder::read_packed_scalar_field(
   if width > 0 {
     let remaining = subreader.remaining()
     if remaining % width != 0 {
-      raise @types.InvalidPackedLength(length=remaining, element_width=width)
+      raise @types.InvalidPackedLength(
+        offset=subreader.position(),
+        length=remaining,
+        element_width=width,
+      )
     }
   }
   let values : Array[@types.ScalarValue] = []
